@@ -11,6 +11,10 @@
     "declaration": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/server.ts",
+    "src/cursor-controller.ts",
+    "src/types.ts"
+  ],
+  "exclude": ["node_modules", "dist", "out"]
 } 
