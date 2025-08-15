@@ -7,6 +7,7 @@ import {
   ErrorCode,
   Tool
 } from '@modelcontextprotocol/sdk/types.js';
+import WebSocket, { WebSocketServer } from 'ws';
 import { CursorController } from './cursor-controller.js';
 import { 
   EditFileParams, 
@@ -222,17 +223,176 @@ class MCPServer {
   }
 
   async run(): Promise<void> {
+    // Start with stdio transport for Claude Desktop
     const transport = new StdioServerTransport();
     console.log('Starting MCP server with stdio transport...');
     
     try {
       await this.server.connect(transport);
       console.log('MCP Server connected and running');
+      
+      // Also start WebSocket server for testing
+      this.startWebSocketServer();
     } catch (error) {
       console.error('Failed to start MCP server:', error);
       process.exit(1);
     }
   }
+
+  private startWebSocketServer(): void {
+    const WS_PORT = process.env.MCP_WS_PORT ? parseInt(process.env.MCP_WS_PORT) : 3057;
+    
+    try {
+      const wss = new WebSocketServer({ port: WS_PORT });
+      console.log(`WebSocket server listening on port ${WS_PORT}`);
+      
+      wss.on('connection', (ws: WebSocket) => {
+        console.log('WebSocket client connected');
+        
+        ws.on('message', async (message: string) => {
+          try {
+            const request = JSON.parse(message.toString());
+            console.log('WebSocket received:', request.method);
+            
+            // Handle the request using the same server instance
+            let response;
+            
+            if (request.method === 'tools/list') {
+              const tools = await this.handleListTools();
+              response = {
+                jsonrpc: '2.0',
+                id: request.id,
+                result: { tools }
+              };
+            } else if (request.method === 'tools/call') {
+              const result = await this.handleToolCall(request.params);
+              response = {
+                jsonrpc: '2.0',
+                id: request.id,
+                result
+              };
+            } else {
+              response = {
+                jsonrpc: '2.0',
+                id: request.id,
+                error: {
+                  code: -32601,
+                  message: 'Method not found'
+                }
+              };
+            }
+            
+            ws.send(JSON.stringify(response));
+                     } catch (error) {
+             const errorResponse = {
+               jsonrpc: '2.0',
+               id: null,
+               error: {
+                 code: -32603,
+                 message: `Internal error: ${error instanceof Error ? error.message : 'Unknown error'}`
+               }
+             };
+             ws.send(JSON.stringify(errorResponse));
+           }
+        });
+        
+        ws.on('close', () => {
+          console.log('WebSocket client disconnected');
+        });
+        
+        ws.on('error', (error) => {
+          console.error('WebSocket error:', error);
+        });
+      });
+      
+      wss.on('error', (error) => {
+        console.error('WebSocket server error:', error);
+      });
+    } catch (error) {
+      console.warn('Failed to start WebSocket server:', error);
+    }
+  }
+
+  private async handleListTools(): Promise<Tool[]> {
+    return [
+      {
+        name: 'edit_file',
+        description: 'Edit or create a file with the specified content',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'File path to edit' },
+            content: { type: 'string', description: 'New file content' }
+          },
+          required: ['path', 'content']
+        }
+      },
+      {
+        name: 'read_file',
+        description: 'Read the content of a file',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'File path to read' }
+          },
+          required: ['path']
+        }
+      },
+      {
+        name: 'list_files',
+        description: 'List files in a directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'Directory path to list', default: '.' }
+          }
+        }
+      },
+      {
+        name: 'open_file',
+        description: 'Open a file in the editor at a specific line',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'File path to open' },
+            line: { type: 'number', description: 'Line number to navigate to' }
+          },
+          required: ['path']
+        }
+      },
+      {
+        name: 'run_command',
+        description: 'Run a command in the terminal',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            command: { type: 'string', description: 'Command to execute' },
+            cwd: { type: 'string', description: 'Working directory for the command' }
+          },
+          required: ['command']
+        }
+      }
+    ];
+  }
+
+     private async handleToolCall(params: any): Promise<any> {
+     const { name, arguments: args } = params;
+     
+     switch (name) {
+       case 'edit_file':
+         return await this.cursorController.editFile(args.path, args.content);
+       case 'read_file':
+         return await this.cursorController.readFile(args.path);
+       case 'list_files':
+         return await this.cursorController.listFiles();
+       case 'open_file':
+         return await this.cursorController.openFile(args.path, args.line);
+       case 'run_command':
+         return await this.cursorController.runCommand(args.command);
+       default:
+         throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
+     }
+   }
 }
 
 // Start the server

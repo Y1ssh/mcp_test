@@ -12,7 +12,11 @@
     "dev": "npm run build-server && node dist/server.js",
     "start": "node dist/server.js",
     "watch": "tsc -watch",
-    "watch-extension": "tsc -p tsconfig.extension.json -watch"
+    "watch-extension": "tsc -p tsconfig.extension.json -watch",
+    "test": "node test-integration.js",
+    "test-server": "npm run build-server && node test-integration.js",
+    "verify-setup": "node scripts/verify-setup.js",
+    "test-watch": "npm run test -- --watch"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
