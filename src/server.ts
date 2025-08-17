@@ -241,7 +241,7 @@ class MCPServer {
   }
 
   private startWebSocketServer(): void {
-    const WS_PORT = process.env.MCP_WS_PORT ? parseInt(process.env.MCP_WS_PORT) : 3057;
+    const WS_PORT = process.env.MCP_WS_PORT ? parseInt(process.env.MCP_WS_PORT) : 3056;
     
     try {
       const wss = new WebSocketServer({ port: WS_PORT });
