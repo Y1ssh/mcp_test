@@ -8,13 +8,13 @@ import {
   Tool
 } from '@modelcontextprotocol/sdk/types.js';
 import WebSocket, { WebSocketServer } from 'ws';
-import { CursorController } from './cursor-controller.js';
+import { CursorController } from './cursor-controller';
 import { 
   EditFileParams, 
   ReadFileParams, 
   OpenFileParams, 
   RunCommandParams 
-} from './types.js';
+} from './types';
 
 class MCPServer {
   private server: Server;
@@ -35,13 +35,13 @@ class MCPServer {
 
     this.cursorController = new CursorController();
     this.setupToolHandlers();
-    console.log('MCP Server initialized');
+    // console.log('MCP Server initialized'); // Removed to prevent JSON contamination
   }
 
   private setupToolHandlers(): void {
     // List tools handler
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      console.log('Received ListTools request');
+      // console.log('Received ListTools request'); // Removed to prevent JSON contamination
       const tools: Tool[] = [
         {
           name: 'edit_file',
@@ -118,15 +118,15 @@ class MCPServer {
         }
       ];
 
-      console.log(`Returning ${tools.length} tools`);
+      // console.log(`Returning ${tools.length} tools`); // Removed to prevent JSON contamination
       return { tools };
     });
 
     // Call tool handler
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      console.log(`Received CallTool request for: ${name}`);
-      console.log(`Arguments:`, args);
+      // console.log(`Received CallTool request for: ${name}`); // Removed to prevent JSON contamination
+      // console.log(`Arguments:`, args); // Removed to prevent JSON contamination
 
       try {
         let result: any;
@@ -197,7 +197,7 @@ class MCPServer {
             );
         }
 
-        console.log(`Tool ${name} executed successfully`);
+        // console.log(`Tool ${name} executed successfully`); // Removed to prevent JSON contamination
         return {
           content: [
             {
@@ -208,6 +208,7 @@ class MCPServer {
         };
 
       } catch (error) {
+        // Use stderr for error logging to avoid JSON contamination
         console.error(`Error executing tool ${name}:`, error);
         
         if (error instanceof McpError) {
@@ -225,11 +226,11 @@ class MCPServer {
   async run(): Promise<void> {
     // Start with stdio transport for Claude Desktop
     const transport = new StdioServerTransport();
-    console.log('Starting MCP server with stdio transport...');
+    // console.log('Starting MCP server with stdio transport...'); // Removed to prevent JSON contamination
     
     try {
       await this.server.connect(transport);
-      console.log('MCP Server connected and running');
+      // console.log('MCP Server connected and running'); // Removed to prevent JSON contamination
       
       // Also start WebSocket server for testing
       this.startWebSocketServer();
@@ -244,15 +245,16 @@ class MCPServer {
     
     try {
       const wss = new WebSocketServer({ port: WS_PORT });
-      console.log(`WebSocket server listening on port ${WS_PORT}`);
+      // Use stderr for WebSocket logging to avoid JSON contamination
+      console.error(`WebSocket server listening on port ${WS_PORT}`);
       
       wss.on('connection', (ws: WebSocket) => {
-        console.log('WebSocket client connected');
+        // console.error('WebSocket client connected'); // Removed to reduce stderr noise
         
         ws.on('message', async (message: string) => {
           try {
             const request = JSON.parse(message.toString());
-            console.log('WebSocket received:', request.method);
+            // console.error('WebSocket received:', request.method); // Removed to reduce stderr noise
             
             // Handle the request using the same server instance
             let response;
@@ -297,7 +299,7 @@ class MCPServer {
         });
         
         ws.on('close', () => {
-          console.log('WebSocket client disconnected');
+          // console.error('WebSocket client disconnected'); // Removed to reduce stderr noise
         });
         
         ws.on('error', (error) => {

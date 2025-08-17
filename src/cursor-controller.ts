@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { resolve, dirname } from 'path';
-import { CursorControllerInterface, CommandResult } from './types.js';
+import { CursorControllerInterface, CommandResult } from './types';
 
 const execAsync = promisify(exec);
 
@@ -11,12 +11,12 @@ export class CursorController implements CursorControllerInterface {
 
   constructor(workingDirectory?: string) {
     this.workingDirectory = workingDirectory || process.cwd();
-    console.log(`CursorController initialized with working directory: ${this.workingDirectory}`);
+    // console.error(`CursorController initialized with working directory: ${this.workingDirectory}`); // Removed to prevent JSON contamination
   }
 
   async editFile(filepath: string, content: string): Promise<void> {
     try {
-      console.log(`Editing file: ${filepath}`);
+      // console.error(`Editing file: ${filepath}`); // Removed to prevent JSON contamination
       const resolvedPath = resolve(this.workingDirectory, filepath);
       
       // Ensure directory exists
@@ -24,7 +24,7 @@ export class CursorController implements CursorControllerInterface {
       await fs.mkdir(dir, { recursive: true });
       
       await fs.writeFile(resolvedPath, content, 'utf8');
-      console.log(`Successfully edited file: ${resolvedPath}`);
+      // console.error(`Successfully edited file: ${resolvedPath}`); // Removed to prevent JSON contamination
     } catch (error) {
       console.error(`Error editing file ${filepath}:`, error);
       throw new Error(`Failed to edit file ${filepath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -33,10 +33,10 @@ export class CursorController implements CursorControllerInterface {
 
   async readFile(filepath: string): Promise<string> {
     try {
-      console.log(`Reading file: ${filepath}`);
+      // console.error(`Reading file: ${filepath}`); // Removed to prevent JSON contamination
       const resolvedPath = resolve(this.workingDirectory, filepath);
       const content = await fs.readFile(resolvedPath, 'utf8');
-      console.log(`Successfully read file: ${resolvedPath} (${content.length} characters)`);
+      // console.error(`Successfully read file: ${resolvedPath} (${content.length} characters)`); // Removed to prevent JSON contamination
       return content;
     } catch (error) {
       console.error(`Error reading file ${filepath}:`, error);
@@ -46,14 +46,14 @@ export class CursorController implements CursorControllerInterface {
 
   async openFile(filepath: string, line?: number): Promise<void> {
     try {
-      console.log(`Opening file: ${filepath}${line ? ` at line ${line}` : ''}`);
+      // console.error(`Opening file: ${filepath}${line ? ` at line ${line}` : ''}`); // Removed to prevent JSON contamination
       const resolvedPath = resolve(this.workingDirectory, filepath);
       
       // Check if file exists
       await fs.access(resolvedPath);
       
       // Simulate opening file in Cursor (in real implementation, this would integrate with Cursor's API)
-      console.log(`File opened successfully: ${resolvedPath}${line ? ` at line ${line}` : ''}`);
+      // console.error(`File opened successfully: ${resolvedPath}${line ? ` at line ${line}` : ''}`); // Removed to prevent JSON contamination
     } catch (error) {
       console.error(`Error opening file ${filepath}:`, error);
       throw new Error(`Failed to open file ${filepath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -62,9 +62,9 @@ export class CursorController implements CursorControllerInterface {
 
   async listFiles(): Promise<string[]> {
     try {
-      console.log(`Listing files in: ${this.workingDirectory}`);
+      // console.error(`Listing files in: ${this.workingDirectory}`); // Removed to prevent JSON contamination
       const files = await this.getFilesRecursively(this.workingDirectory);
-      console.log(`Found ${files.length} files`);
+      // console.error(`Found ${files.length} files`); // Removed to prevent JSON contamination
       return files;
     } catch (error) {
       console.error('Error listing files:', error);
@@ -95,15 +95,15 @@ export class CursorController implements CursorControllerInterface {
 
   async runCommand(command: string): Promise<string> {
     try {
-      console.log(`Running command: ${command}`);
+      // console.error(`Running command: ${command}`); // Removed to prevent JSON contamination
       const result = await execAsync(command, { 
         cwd: this.workingDirectory,
         maxBuffer: 1024 * 1024 // 1MB buffer
       });
       
       const output = result.stdout || result.stderr || '';
-      console.log(`Command executed successfully: ${command}`);
-      console.log(`Output length: ${output.length} characters`);
+      // console.error(`Command executed successfully: ${command}`); // Removed to prevent JSON contamination
+      // console.error(`Output length: ${output.length} characters`); // Removed to prevent JSON contamination
       
       return output;
     } catch (error: any) {

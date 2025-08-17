@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Complete MCP bridge between Claude Desktop and Cursor IDE",
   "main": "dist/server.js",
-  "type": "module",
+
   "scripts": {
     "install-all": "npm install",
     "build": "npm run build-server && npm run build-extension",
