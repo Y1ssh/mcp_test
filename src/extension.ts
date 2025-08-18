@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import WebSocket from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { MCPClient } from './mcp-client';
 import { CursorAPI } from './cursor-api';
 import { ExtensionCommand, ConnectionStatus } from './types';
@@ -7,7 +7,7 @@ import { ExtensionCommand, ConnectionStatus } from './types';
 let mcpClient: MCPClient;
 let cursorAPI: CursorAPI;
 let statusBarItem: vscode.StatusBarItem;
-let wsServer: WebSocket.Server;
+let wsServer: WebSocketServer;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Cursor MCP Bridge extension activated');
@@ -70,7 +70,7 @@ function setupWebSocketServer() {
   try {
     console.log('Setting up WebSocket server on port 3057');
     
-    wsServer = new WebSocket.Server({ port: 3057 });
+    wsServer = new WebSocketServer({ port: 3057 });
     
     wsServer.on('connection', (ws: WebSocket) => {
       console.log('WebSocket client connected');

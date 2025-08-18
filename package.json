@@ -1,6 +1,6 @@
 {
   "name": "claude-cursor-mcp-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Complete MCP bridge between Claude Desktop and Cursor IDE",
   "main": "dist/server.js",
 
@@ -16,7 +16,8 @@
     "test": "node test-integration.js",
     "test-server": "npm run build-server && node test-integration.js",
     "verify-setup": "node scripts/verify-setup.js",
-    "test-watch": "npm run test -- --watch"
+    "test-watch": "npm run test -- --watch",
+    "package": "vsce package"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -26,7 +27,8 @@
     "@types/vscode": "^1.74.0",
     "@types/node": "^20.0.0",
     "@types/ws": "^8.5.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.15.0"
   },
   "engines": {
     "vscode": "^1.74.0"

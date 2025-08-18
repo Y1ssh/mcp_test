@@ -19,6 +19,7 @@ import {
 class MCPServer {
   private server: Server;
   private cursorController: CursorController;
+  private extensionWsClient: WebSocket | null = null;
 
   constructor() {
     this.server = new Server(
@@ -166,8 +167,22 @@ class MCPServer {
                 'open_file requires filepath parameter'
               );
             }
-            await this.cursorController.openFile(params.filepath, params.line);
-            result = { success: true, message: `File ${params.filepath} opened successfully` };
+            
+            // Try to open file through extension WebSocket first
+            if (this.extensionWsClient && this.extensionWsClient.readyState === WebSocket.OPEN) {
+              try {
+                await this.sendToExtension('open_file', { filepath: params.filepath, line: params.line });
+                result = { success: true, message: `File ${params.filepath} opened successfully via extension` };
+              } catch (error) {
+                console.error('Failed to open file via extension, falling back to direct method:', error);
+                await this.cursorController.openFile(params.filepath, params.line);
+                result = { success: true, message: `File ${params.filepath} opened successfully via direct method` };
+              }
+            } else {
+              // Fallback to direct method if extension not connected
+              await this.cursorController.openFile(params.filepath, params.line);
+              result = { success: true, message: `File ${params.filepath} opened successfully via direct method` };
+            }
             break;
           }
 
@@ -234,10 +249,85 @@ class MCPServer {
       
       // Also start WebSocket server for testing
       this.startWebSocketServer();
+      
+      // Connect to extension WebSocket
+      this.connectToExtension();
     } catch (error) {
       console.error('Failed to start MCP server:', error);
       process.exit(1);
     }
+  }
+
+  private connectToExtension(): void {
+    try {
+      this.extensionWsClient = new WebSocket('ws://localhost:3057');
+      
+      this.extensionWsClient.on('open', () => {
+        console.error('Connected to extension WebSocket on port 3057');
+      });
+      
+      this.extensionWsClient.on('message', (data: WebSocket.Data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          console.error('Received message from extension:', message);
+        } catch (error) {
+          console.error('Error parsing extension message:', error);
+        }
+      });
+      
+      this.extensionWsClient.on('close', () => {
+        console.error('Extension WebSocket connection closed');
+        this.extensionWsClient = null;
+        // Try to reconnect after a delay
+        setTimeout(() => this.connectToExtension(), 5000);
+      });
+      
+      this.extensionWsClient.on('error', (error) => {
+        console.error('Extension WebSocket error:', error);
+      });
+    } catch (error) {
+      console.error('Failed to connect to extension:', error);
+      // Try to reconnect after a delay
+      setTimeout(() => this.connectToExtension(), 5000);
+    }
+  }
+
+  private async sendToExtension(method: string, params: any): Promise<void> {
+    if (!this.extensionWsClient || this.extensionWsClient.readyState !== WebSocket.OPEN) {
+      throw new Error('Extension WebSocket not connected');
+    }
+    
+    const message = {
+      method,
+      params,
+      id: Date.now()
+    };
+    
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Extension response timeout'));
+      }, 5000);
+      
+      const messageHandler = (data: WebSocket.Data) => {
+        try {
+          const response = JSON.parse(data.toString());
+          if (response.id === message.id) {
+            clearTimeout(timeout);
+            this.extensionWsClient?.removeListener('message', messageHandler);
+            if (response.error) {
+              reject(new Error(response.error.message));
+            } else {
+              resolve();
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing extension response:', error);
+        }
+      };
+      
+      this.extensionWsClient?.on('message', messageHandler);
+      this.extensionWsClient?.send(JSON.stringify(message));
+    });
   }
 
   private startWebSocketServer(): void {

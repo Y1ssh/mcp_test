@@ -32,14 +32,11 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
 const vscode = __importStar(require("vscode"));
-const ws_1 = __importDefault(require("ws"));
+const ws_1 = require("ws");
 const mcp_client_1 = require("./mcp-client");
 const cursor_api_1 = require("./cursor-api");
 let mcpClient;
@@ -96,7 +93,7 @@ function deactivate() {
 function setupWebSocketServer() {
     try {
         console.log('Setting up WebSocket server on port 3057');
-        wsServer = new ws_1.default.Server({ port: 3057 });
+        wsServer = new ws_1.WebSocketServer({ port: 3057 });
         wsServer.on('connection', (ws) => {
             console.log('WebSocket client connected');
             ws.on('message', async (data) => {
