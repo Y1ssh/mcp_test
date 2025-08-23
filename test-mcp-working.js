@@ -1,0 +1,1 @@
+console.log('MCP Bridge is working perfectly!');

@@ -1,0 +1,39 @@
+{
+  "name": "cursor-mcp-bridge",
+  "displayName": "Cursor MCP Bridge",
+  "description": "Bridge between MCP Server and Cursor IDE",
+  "version": "1.0.0",
+  "publisher": "mcp-bridge",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["*"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursor-mcp-bridge.connect",
+        "title": "Connect to MCP Server"
+      },
+      {
+        "command": "cursor-mcp-bridge.disconnect",
+        "title": "Disconnect from MCP Server"
+      },
+      {
+        "command": "cursor-mcp-bridge.status",
+        "title": "MCP Bridge Status"
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^2.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  }
+} 
