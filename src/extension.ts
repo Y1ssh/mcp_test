@@ -3,11 +3,14 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { MCPClient } from './mcp-client';
 import { CursorAPI } from './cursor-api';
 import { ExtensionCommand, ConnectionStatus } from './types';
+import { MCPChatParticipant } from './chat-participant';
+import { registerLanguageModelTools } from './language-model-tools';
 
 let mcpClient: MCPClient;
 let cursorAPI: CursorAPI;
 let statusBarItem: vscode.StatusBarItem;
 let wsServer: WebSocketServer;
+let chatParticipant: MCPChatParticipant;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Cursor MCP Bridge extension activated');
@@ -33,6 +36,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Setup file change listeners
     setupFileWatchers(context);
+
+    // Initialize chat participant
+    chatParticipant = new MCPChatParticipant(mcpClient, context);
+
+    // Register language model tools for agent mode
+    registerLanguageModelTools(mcpClient, context);
 
     // Auto-connect to MCP server
     setTimeout(() => {
@@ -152,6 +161,21 @@ async function handleWebSocketMessage(message: any): Promise<any> {
             lineCount: editor.document.lineCount
           } : null 
         };
+        break;
+
+      case 'cursor_chat_with_ai':
+        const chatResponse = await sendMessageToCursorAI(params.message, params.context);
+        result = { success: true, response: chatResponse };
+        break;
+        
+      case 'cursor_trigger_auto_agent':
+        const agentResult = await triggerAutoAgent(params.prompt, params.strategy);
+        result = { success: true, response: agentResult };
+        break;
+        
+      case 'cursor_get_chat_history':
+        const history = await getChatHistory(params.limit);
+        result = { success: true, history };
         break;
         
       default:
@@ -292,5 +316,52 @@ Reconnect Attempts: ${status.reconnectAttempts}`;
   } catch (error) {
     console.error('Error showing status:', error);
     vscode.window.showErrorMessage('Failed to get status');
+  }
+}
+
+/**
+ * Send message to Cursor AI chat interface
+ */
+async function sendMessageToCursorAI(message: string, context?: string): Promise<any> {
+  try {
+    // Use the chat participant to send the message
+    const result = await vscode.commands.executeCommand('mcp-bridge.query-server', message, context);
+    return result;
+  } catch (error) {
+    console.error('Error sending message to Cursor AI:', error);
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Trigger Cursor's auto agent
+ */
+async function triggerAutoAgent(prompt: string, strategy?: string): Promise<any> {
+  try {
+    const result = await vscode.commands.executeCommand('mcp-bridge.trigger-agent', prompt, strategy);
+    return result;
+  } catch (error) {
+    console.error('Error triggering auto agent:', error);
+    return { error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+/**
+ * Get chat history
+ */
+async function getChatHistory(limit?: number): Promise<any> {
+  try {
+    // Return a simulated chat history for now
+    // In a real implementation, this would retrieve actual chat history
+    return [
+      {
+        timestamp: new Date().toISOString(),
+        message: 'Chat history feature is now available',
+        role: 'system'
+      }
+    ];
+  } catch (error) {
+    console.error('Error getting chat history:', error);
+    return [];
   }
 } 

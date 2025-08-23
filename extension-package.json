@@ -11,6 +11,15 @@
   "activationEvents": ["*"],
   "main": "./out/extension.js",
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "mcp-bridge.cursor-integration",
+        "fullName": "MCP Bridge",
+        "name": "mcp-bridge",
+        "description": "Bridge between Claude Desktop and Cursor AI through MCP protocol",
+        "isSticky": true
+      }
+    ],
     "commands": [
       {
         "command": "cursor-mcp-bridge.connect",
@@ -23,6 +32,22 @@
       {
         "command": "cursor-mcp-bridge.status",
         "title": "MCP Bridge Status"
+      },
+      {
+        "command": "mcp-bridge.query-server",
+        "title": "Query MCP Server"
+      },
+      {
+        "command": "mcp-bridge.file-operation",
+        "title": "MCP File Operation"
+      },
+      {
+        "command": "mcp-bridge.trigger-agent",
+        "title": "Trigger Auto Agent"
+      },
+      {
+        "command": "mcp-bridge.workspace-info",
+        "title": "Get Workspace Info"
       }
     ]
   },
