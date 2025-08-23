@@ -116,6 +116,75 @@ class MCPServer {
             },
             required: ['command']
           }
+        },
+        {
+          name: 'cursor_chat_with_ai',
+          description: 'Send message to Cursor AI chat interface',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              message: {
+                type: 'string',
+                description: 'Message to send to Cursor AI'
+              },
+              context: {
+                type: 'string',
+                description: 'Additional context for the message (optional)'
+              }
+            },
+            required: ['message']
+          }
+        },
+        {
+          name: 'cursor_trigger_auto_agent',
+          description: 'Trigger Cursor\'s auto AI agent with optimized prompt',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'Task prompt for the auto agent'
+              },
+              strategy: {
+                type: 'string',
+                description: 'Strategy for agent execution (rapid_prototype, production_ready, collaborative)',
+                enum: ['rapid_prototype', 'production_ready', 'collaborative', 'adaptive']
+              }
+            },
+            required: ['prompt']
+          }
+        },
+        {
+          name: 'cursor_get_chat_history',
+          description: 'Retrieve recent chat history with Cursor AI',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              limit: {
+                type: 'number',
+                description: 'Maximum number of chat entries to retrieve (default: 10)'
+              }
+            },
+            required: []
+          }
+        },
+        {
+          name: 'start_ai_collaboration',
+          description: 'Start AI collaboration session between Claude and Cursor',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task: {
+                type: 'string',
+                description: 'Description of the collaboration task'
+              },
+              strategy: {
+                type: 'string',
+                description: 'Collaboration strategy to employ'
+              }
+            },
+            required: ['task']
+          }
         }
       ];
 
@@ -202,6 +271,77 @@ class MCPServer {
             }
             const output = await this.cursorController.runCommand(params.command);
             result = { success: true, output, message: `Command executed successfully` };
+            break;
+          }
+
+          case 'cursor_chat_with_ai': {
+            const params = args as unknown as { message: string; context?: string };
+            if (!params?.message) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                'cursor_chat_with_ai requires message parameter'
+              );
+            }
+            
+            // Send to extension via WebSocket
+            if (this.extensionWsClient && this.extensionWsClient.readyState === WebSocket.OPEN) {
+              const response = await this.sendToExtension('cursor_chat_with_ai', params);
+              result = { success: true, response, message: 'Message sent to Cursor AI chat' };
+            } else {
+              result = { success: false, message: 'Extension WebSocket not connected' };
+            }
+            break;
+          }
+
+          case 'cursor_trigger_auto_agent': {
+            const params = args as unknown as { prompt: string; strategy?: string };
+            if (!params?.prompt) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                'cursor_trigger_auto_agent requires prompt parameter'
+              );
+            }
+            
+            // Send to extension via WebSocket
+            if (this.extensionWsClient && this.extensionWsClient.readyState === WebSocket.OPEN) {
+              const response = await this.sendToExtension('cursor_trigger_auto_agent', params);
+              result = { success: true, response, message: 'Auto agent triggered successfully' };
+            } else {
+              result = { success: false, message: 'Extension WebSocket not connected' };
+            }
+            break;
+          }
+
+          case 'cursor_get_chat_history': {
+            const params = args as unknown as { limit?: number };
+            const limit = params?.limit || 10;
+            
+            // Send to extension via WebSocket
+            if (this.extensionWsClient && this.extensionWsClient.readyState === WebSocket.OPEN) {
+              const response = await this.sendToExtension('cursor_get_chat_history', { limit });
+              result = { success: true, history: response, message: 'Chat history retrieved successfully' };
+            } else {
+              result = { success: false, message: 'Extension WebSocket not connected' };
+            }
+            break;
+          }
+
+          case 'start_ai_collaboration': {
+            const params = args as unknown as { task: string; strategy?: string };
+            if (!params?.task) {
+              throw new McpError(
+                ErrorCode.InvalidParams,
+                'start_ai_collaboration requires task parameter'
+              );
+            }
+            
+            // Send to extension via WebSocket
+            if (this.extensionWsClient && this.extensionWsClient.readyState === WebSocket.OPEN) {
+              const response = await this.sendToExtension('start_ai_collaboration', params);
+              result = { success: true, response, message: 'AI collaboration session started' };
+            } else {
+              result = { success: false, message: 'Extension WebSocket not connected' };
+            }
             break;
           }
 

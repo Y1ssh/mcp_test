@@ -23,6 +23,36 @@
       {
         "command": "cursor-mcp-bridge.status",
         "title": "MCP Bridge Status"
+      },
+      {
+        "command": "mcp-bridge.send-to-chat",
+        "title": "Send Message to Cursor AI Chat"
+      },
+      {
+        "command": "mcp-bridge.trigger-agent",
+        "title": "Trigger Cursor Auto Agent"
+      },
+      {
+        "command": "mcp-bridge.get-history",
+        "title": "Get Chat History"
+      },
+      {
+        "command": "mcp-bridge.test-connection",
+        "title": "Test MCP Connection"
+      },
+      {
+        "command": "mcp-bridge.monitor-collaboration",
+        "title": "Monitor AI Collaboration"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "mcp-bridge.cursor-integration",
+        "fullName": "MCP Bridge",
+        "name": "mcp-bridge",
+        "description": "Bridge between Claude Desktop and Cursor AI - enables AI-to-AI communication",
+        "isSticky": true,
+        "sampleRequest": "Send a message to Cursor AI or trigger the auto agent"
       }
     ]
   },

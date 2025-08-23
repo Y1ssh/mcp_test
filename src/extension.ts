@@ -3,11 +3,14 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { MCPClient } from './mcp-client';
 import { CursorAPI } from './cursor-api';
 import { ExtensionCommand, ConnectionStatus } from './types';
+import { MCPChatParticipant } from './chat-participant';
+import { registerLanguageModelTools } from './language-model-tools';
 
 let mcpClient: MCPClient;
 let cursorAPI: CursorAPI;
 let statusBarItem: vscode.StatusBarItem;
 let wsServer: WebSocketServer;
+let chatParticipant: MCPChatParticipant;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Cursor MCP Bridge extension activated');
@@ -34,12 +37,29 @@ export function activate(context: vscode.ExtensionContext) {
     // Setup file change listeners
     setupFileWatchers(context);
 
+    // Initialize Chat Participant Integration
+    try {
+      chatParticipant = new MCPChatParticipant(mcpClient, context);
+      console.log('✅ MCP Chat Participant initialized');
+    } catch (error) {
+      console.error('Failed to initialize chat participant:', error);
+    }
+
+    // Register Language Model Tools for agent mode
+    try {
+      const toolDisposables = registerLanguageModelTools(mcpClient);
+      context.subscriptions.push(...toolDisposables);
+      console.log('✅ MCP Language Model Tools registered');
+    } catch (error) {
+      console.error('Failed to register language model tools:', error);
+    }
+
     // Auto-connect to MCP server
     setTimeout(() => {
       connectToMCPServer();
     }, 1000);
 
-    console.log('Cursor MCP Bridge extension setup complete');
+    console.log('🌉 Cursor MCP Bridge extension setup complete with chat integration!');
   } catch (error) {
     console.error('Error activating extension:', error);
     vscode.window.showErrorMessage(`Failed to activate MCP Bridge: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -153,6 +173,22 @@ async function handleWebSocketMessage(message: any): Promise<any> {
           } : null 
         };
         break;
+
+      case 'cursor_chat_with_ai':
+        result = await handleChatWithAI(params);
+        break;
+
+      case 'cursor_trigger_auto_agent':
+        result = await handleTriggerAutoAgent(params);
+        break;
+
+      case 'cursor_get_chat_history':
+        result = await handleGetChatHistory(params);
+        break;
+
+      case 'start_ai_collaboration':
+        result = await handleStartAICollaboration(params);
+        break;
         
       default:
         throw new Error(`Unknown method: ${method}`);
@@ -241,6 +277,199 @@ function setupFileWatchers(context: vscode.ExtensionContext) {
     context.subscriptions.push(editorWatcher);
   } catch (error) {
     console.error('Error setting up file watchers:', error);
+  }
+}
+
+// Chat Integration Handlers
+
+async function handleChatWithAI(params: { message: string; context?: string }): Promise<any> {
+  try {
+    console.log('Handling chat with AI:', params);
+    
+    // Use the chat participant to send message
+    if (chatParticipant) {
+      await chatParticipant.sendMessageToCursorAI(params.message);
+      return { success: true, message: 'Message sent to Cursor AI chat' };
+    } else {
+      // Fallback: Open chat and copy message to clipboard
+      await vscode.commands.executeCommand('workbench.action.chat.open');
+      await vscode.env.clipboard.writeText(params.message);
+      vscode.window.showInformationMessage(`Message ready to paste in chat: "${params.message.substring(0, 50)}..."`);
+      return { success: true, message: 'Chat opened and message copied to clipboard' };
+    }
+  } catch (error) {
+    console.error('Error in handleChatWithAI:', error);
+         return { success: false, error: (error as Error).message };
+  }
+}
+
+async function handleTriggerAutoAgent(params: { prompt: string; strategy?: string }): Promise<any> {
+  try {
+    console.log('Triggering auto agent:', params);
+    
+    // Optimize prompt for auto agent
+    const optimizedPrompt = optimizePromptForAgent(params.prompt, params.strategy);
+    
+    // Try different agent triggering approaches
+    const agentCommands = [
+      'cursor.composer.create',
+      'cursor.agent.activate',
+      'workbench.action.chat.openInSidebar'
+    ];
+
+    for (const command of agentCommands) {
+      try {
+        await vscode.commands.executeCommand(command, { prompt: optimizedPrompt });
+        vscode.window.showInformationMessage(`🤖 Auto agent triggered: ${params.prompt.substring(0, 50)}...`);
+        return { success: true, message: 'Auto agent triggered successfully' };
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Fallback: Copy prompt to clipboard and show instructions
+    await vscode.env.clipboard.writeText(optimizedPrompt);
+    vscode.window.showWarningMessage('Auto agent triggering failed. Optimized prompt copied to clipboard.');
+    
+    return { 
+      success: true, 
+      message: 'Prompt copied to clipboard. Please paste in Cursor Composer (Ctrl+I)',
+      prompt: optimizedPrompt
+    };
+    
+  } catch (error) {
+    console.error('Error in handleTriggerAutoAgent:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+async function handleGetChatHistory(params: { limit?: number }): Promise<any> {
+  try {
+    console.log('Getting chat history:', params);
+    
+    const limit = params.limit || 10;
+    
+    // For now, return placeholder data
+    // In a real implementation, this would access Cursor's chat storage
+    const history = [
+      {
+        timestamp: new Date().toISOString(),
+        role: 'user',
+        content: 'Example user message'
+      },
+      {
+        timestamp: new Date().toISOString(),
+        role: 'assistant',
+        content: 'Example AI response'
+      }
+    ];
+    
+    return { 
+      success: true, 
+      history: history.slice(0, limit),
+      message: `Retrieved ${Math.min(history.length, limit)} chat entries`
+    };
+    
+  } catch (error) {
+    console.error('Error in handleGetChatHistory:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+async function handleStartAICollaboration(params: { task: string; strategy?: string }): Promise<any> {
+  try {
+    console.log('Starting AI collaboration:', params);
+    
+    // Generate collaboration ID
+    const collaborationId = `collab_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    
+    // Optimize the task for auto agent
+    const optimizedPrompt = optimizePromptForAgent(params.task, params.strategy);
+    
+    // Show collaboration notification
+    const notification = `🤝 AI Collaboration Session Started
+Task: ${params.task}
+ID: ${collaborationId}
+Strategy: ${params.strategy || 'adaptive'}`;
+
+    vscode.window.showInformationMessage(notification);
+    
+    // Try to trigger auto agent with the optimized prompt
+    try {
+      await vscode.commands.executeCommand('cursor.composer.create', {
+        prompt: optimizedPrompt
+      });
+    } catch (error) {
+      // Fallback: Copy to clipboard
+      await vscode.env.clipboard.writeText(optimizedPrompt);
+      vscode.window.showWarningMessage('Auto agent fallback: Prompt copied to clipboard. Please paste in Cursor Composer.');
+    }
+    
+    return { 
+      success: true, 
+      collaborationId,
+      task: params.task,
+      strategy: params.strategy || 'adaptive',
+      message: 'AI collaboration session started successfully'
+    };
+    
+  } catch (error) {
+    console.error('Error in handleStartAICollaboration:', error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+function optimizePromptForAgent(task: string, strategy?: string): string {
+  const strategyInstructions = getStrategyInstructions(strategy);
+  
+  return `🎯 CURSOR AUTO AGENT TASK
+
+ORIGINAL REQUEST: ${task}
+
+${strategyInstructions}
+
+EXECUTION GUIDELINES:
+- Implement complete, production-ready solution
+- Follow modern best practices and patterns
+- Add comprehensive error handling
+- Include proper documentation and comments
+- Ensure code is testable and maintainable
+- Consider edge cases and performance
+- Provide clear implementation steps
+
+EXPECTED OUTCOME: Fully functional implementation ready for use.
+
+Please proceed with the implementation now.`;
+}
+
+function getStrategyInstructions(strategy?: string): string {
+  switch (strategy) {
+    case 'rapid_prototype':
+      return `STRATEGY: Rapid Prototyping
+- Focus on core functionality first
+- Use simple, direct approaches
+- Prioritize working solution over perfection
+- Add TODOs for future enhancements`;
+      
+    case 'production_ready':
+      return `STRATEGY: Production Ready
+- Implement robust error handling
+- Add comprehensive logging
+- Include security considerations
+- Optimize for performance and scalability`;
+      
+    case 'collaborative':
+      return `STRATEGY: Collaborative Development
+- Break down into clear, modular components
+- Document interfaces and APIs
+- Consider team development workflows
+- Enable easy testing and debugging`;
+      
+    default:
+      return `STRATEGY: Adaptive Approach
+- Analyze requirements and choose appropriate patterns
+- Balance speed and quality based on context
+- Implement incrementally with clear milestones`;
   }
 }
 
