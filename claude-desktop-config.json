@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "cursor-bridge": {
+      "command": "node",
+      "args": ["./dist/server.js"],
+      "env": {},
+      "cwd": "."
+    }
+  }
+} 

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "./out",
+    "target": "ES2022",
+    "sourceMap": true
+  },
+  "include": [
+    "src/extension.ts",
+    "src/mcp-client.ts", 
+    "src/cursor-api.ts",
+    "src/types.ts"
+  ]
+} 

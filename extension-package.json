@@ -1,0 +1,64 @@
+{
+  "name": "cursor-mcp-bridge",
+  "displayName": "Cursor MCP Bridge",
+  "description": "Bridge between MCP Server and Cursor IDE",
+  "version": "1.0.0",
+  "publisher": "mcp-bridge",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["*"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursor-mcp-bridge.connect",
+        "title": "Connect to MCP Server"
+      },
+      {
+        "command": "cursor-mcp-bridge.disconnect",
+        "title": "Disconnect from MCP Server"
+      },
+      {
+        "command": "cursor-mcp-bridge.status",
+        "title": "MCP Bridge Status"
+      },
+      {
+        "command": "mcp-bridge.send-to-chat",
+        "title": "Send to Chat"
+      },
+      {
+        "command": "mcp-bridge.trigger-agent",
+        "title": "Trigger Auto Agent"
+      },
+      {
+        "command": "mcp-bridge.get-history",
+        "title": "Get Chat History"
+      },
+      {
+        "command": "mcp-bridge.test-integration",
+        "title": "Test MCP Integration"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "mcp-bridge.cursor-integration",
+        "fullName": "MCP Bridge",
+        "name": "mcp-bridge",
+        "description": "Bridge between Claude Desktop and Cursor AI",
+        "isSticky": true
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^2.15.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  }
+} 
